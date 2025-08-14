@@ -64,6 +64,8 @@ if uploaded_data is not None:
            'YoY Growth %', 'YtD Growth %', 'Total Merk YtD',
            'Total All YtD', 'MSY']]
     
+    full_data = full_data.sort_values(['Tahun', 'nbulan', 'Merk']).reset_index(drop=True)
+    
     # Ganti inf jadi 1.0 (100%)
     for col in ['MoM Growth %', 'YoY Growth %', 'YtD Growth %']:
         full_data[col] = full_data[col].replace([float('inf'), float('-inf')], 1.0)
