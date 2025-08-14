@@ -44,6 +44,11 @@ if uploaded_data is not None:
 
     full_data = calc_ytd_market_share(data_copy)
 
+    mapping_df['Merk'] = mapping_df['Merk'].str.strip()
+    mapping_df['Daerah'] = mapping_df['Daerah'].str.strip()
+    full_data['Merk'] = full_data['Merk'].str.strip()
+    full_data['Daerah'] = full_data['Daerah'].str.strip()
+
     segment_map = {(row['Merk'], row['Daerah']): row['Segment'] for _, row in mapping_df.iterrows()}
     area_ap_map = {row['Daerah']: row['Area AP'] for _, row in mapping_df.iterrows()}
 
