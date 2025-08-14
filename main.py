@@ -50,13 +50,12 @@ if uploaded_data is not None and uploaded_mapping is not None:
 
     full_data = calc_ytd_market_share(data_copy)
 
-    # Mapping segment & area
-    segment_map = {(row['Merk'], row['Daerah']): row['Segment'] for _, row in mapping_df.iterrows()}
-    area_ap_map = {row['Daerah']: row['Area AP'] for _, row in mapping_df.iterrows()}
-
-    full_data['Segment'] = full_data.apply(lambda x: segment_map.get((x['Merk'], x['Daerah']), None), axis=1)
-    full_data['Area AP'] = full_data['Daerah'].map(area_ap_map)
-    full_data = full_data.sort_values(['Tahun', 'nbulan', 'Merk']).reset_index(drop=True)
+    # Join dengan mapping_df untuk Segment & Area AP
+    full_data = full_data.merge(
+        mapping_df[['Merk', 'Daerah', 'Segment', 'Area AP']],
+        on=['Merk', 'Daerah'],
+        how='left'
+    )
 
     # Urutan kolom final
     full_data = full_data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Kemasan',
