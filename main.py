@@ -50,11 +50,13 @@ if uploaded_data is not None:
     full_data = calc_ytd_market_share(data_copy)
 
     # Join dengan mapping_df untuk Segment & Area AP
-    full_data = full_data.merge(
-        mapping_df[['Merk', 'Daerah', 'Segment', 'Area AP']],
-        on=['Merk', 'Daerah'],
-        how='left'
-    )
+    # Join Segment
+    map_segment = mapping_df.drop_duplicates(subset=['Merk', 'Daerah'])[['Merk', 'Daerah', 'Segment']]
+    full_data = full_data.merge(map_segment, on=['Merk', 'Daerah'], how='left')
+    
+    # Join Area AP
+    map_area = mapping_df.drop_duplicates(subset=['Daerah'])[['Daerah', 'Area AP']]
+    full_data = full_data.merge(map_area, on='Daerah', how='left')
 
     # Urutan kolom final
     full_data = full_data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Kemasan',
