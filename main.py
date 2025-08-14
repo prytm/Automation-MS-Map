@@ -63,6 +63,10 @@ if uploaded_data is not None:
            'Holding', 'Merk', 'nbulan', 'Total', 'Segment', 'Area AP', 'MS', 'MoM Growth %',
            'YoY Growth %', 'YtD Growth %', 'Total Merk YtD',
            'Total All YtD', 'MSY']]
+    
+    # Ganti inf jadi 1.0 (100%)
+    for col in ['MoM Growth %', 'YoY Growth %', 'YtD Growth %']:
+        full_data[col] = full_data[col].replace([float('inf'), float('-inf')], 1.0)
 
     # Simpan ke buffer memori
     output = io.BytesIO()
