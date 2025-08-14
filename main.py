@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 st.title("Automasi Market Share & Mapping")
 
@@ -56,10 +57,15 @@ if uploaded_data is not None:
            'Total All YtD', 'MSY']]
     del full_data['MS_YTD']
 
-    # Download tombol
+    # Simpan hasil ke buffer memori
+    output = io.BytesIO()
+    full_data.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+    
+    # Tombol download di Streamlit
     st.download_button(
         label="Download Data Hasil",
-        data=full_data.to_excel(index=False),
-        file_name="Data Hasil.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        data=output,
+        file_name='Data_Hasil.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
