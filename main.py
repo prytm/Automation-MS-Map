@@ -12,7 +12,10 @@ if uploaded_data is not None:
     data = pd.read_excel(uploaded_data)
 
     # Baca mapping langsung dari repo
-    mapping_df = pd.read_excel("Mapping.xlsx")  # Pastikan Mapping.xlsx ada di repo
+    try:
+        mapping_df = pd.read_excel("Mapping.xlsx")
+    except Exception as e:
+        st.error(f"Error load mapping: {e}")
 
     # --- Prosesnya sama kayak script kamu ---
     data_new = data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Total', 'Kemasan', 'Negara', 'Holding', 'Merk', 'nbulan']]
