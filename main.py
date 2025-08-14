@@ -6,14 +6,13 @@ st.title("Automasi Market Share & Mapping")
 
 # Upload file data utama
 uploaded_data = st.file_uploader("Upload file Data Utama (Excel)", type=["xlsx"])
-uploaded_mapping = st.file_uploader("Upload file Mapping (Excel)", type=["xlsx"])
 
 if uploaded_data is not None and uploaded_mapping is not None:
     # Baca file data utama
     data = pd.read_excel(uploaded_data)
 
     # Baca mapping
-    mapping_df = pd.read_excel(uploaded_mapping)
+    mapping_df = pd.read_excel('Mapping.xlsx')
 
     # --- Proses ---
     data_new = data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Total', 'Kemasan', 'Negara', 'Holding', 'Merk', 'nbulan']]
