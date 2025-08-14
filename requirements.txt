@@ -2,4 +2,3 @@ pandas
 numpy
 openpyxl
 streamlit
-io
