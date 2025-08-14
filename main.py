@@ -7,7 +7,7 @@ st.title("Automasi Market Share & Mapping")
 # Upload file data utama
 uploaded_data = st.file_uploader("Upload file Data Utama (Excel)", type=["xlsx"])
 
-if uploaded_data is not None and uploaded_mapping is not None:
+if uploaded_data is not None:
     # Baca file data utama
     data = pd.read_excel(uploaded_data)
 
