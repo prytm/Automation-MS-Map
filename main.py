@@ -17,7 +17,7 @@ if uploaded_data is not None:
     # --- Proses ---
     data_new = data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Total', 'Kemasan', 'Negara', 'Holding', 'Merk', 'nbulan']]
     data_new_grouped = data_new.groupby(
-        ['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Kemasan', 'Holding', 'Merk', 'nbulan'],
+        ['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Kemasan', 'Holding', 'Negara', 'Merk', 'nbulan'],
         as_index=False
     )['Total'].sum()
 
@@ -59,8 +59,8 @@ if uploaded_data is not None:
     full_data = full_data.merge(map_area, on='Daerah', how='left')
 
     # Urutan kolom final
-    full_data = full_data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Kemasan',
-           'Holding', 'Merk', 'nbulan', 'Total', 'Segment', 'Area AP', 'MS', 'MoM Growth %',
+    full_data = full_data[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Total', 'Kemasan',
+           'Negara', 'Holding', 'Merk', 'nbulan',  'Segment', 'Area AP', 'MS', 'MoM Growth %',
            'YoY Growth %', 'YtD Growth %', 'Total Merk YtD',
            'Total All YtD', 'MSY']]
     
