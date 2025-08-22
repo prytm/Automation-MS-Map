@@ -95,7 +95,7 @@ if uploaded_current and uploaded_db and uploaded_map:
     final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
     final_cols = [c for c in final_cols if c in result.columns]
     final = (result[final_cols]
-             .sort_values(["Tahun","nbulan","Daerah","Merk"])
+             .sort_values(["Tahun","nbulan","Merk"])
              .reset_index(drop=True))
 
     st.success(f"Ok! Baris: {len(final):,}")
