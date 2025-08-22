@@ -172,11 +172,6 @@ if uploaded_current and uploaded_db and uploaded_map:
              .sort_values(["Tahun", "nbulan", "Daerah", "Merk"])
              .reset_index(drop=True))
 
-    final = final[['Tahun', 'Bulan', 'Daerah', 'Pulau', 'Produsen', 'Total', 'Kemasan',
-           'Negara', 'Holding', 'Merk', 'nbulan',  'Segment', 'Area AP', 'MS', 'MoM Growth %',
-           'YoY Growth %', 'YtD Growth %', 'Total Merk YtD',
-           'Total All YtD', 'MSY']]
-
     st.success(f"Berhasil! Baris: {len(final):,}")
 
     # --- Download ---
