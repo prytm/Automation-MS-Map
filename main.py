@@ -4,6 +4,35 @@ import io
 
 st.title("Automasi Market Share & Mapping")
 
+# ==== Mapping Daerah ke Pulau ====
+daerah_to_pulau = {
+# Sumatera
+"D.I. Aceh": "Sumatera", "Sumut": "Sumatera", "Sumbar": "Sumatera",
+"Riau": "Sumatera", "Kepulauan Riau": "Sumatera", "Jambi": "Sumatera",
+"Sumsel": "Sumatera", "Bangka - Belitung": "Sumatera",
+"Bengkulu": "Sumatera", "Lampung": "Sumatera",
+
+# Jawa
+"D. K. I. Jakarta": "Jawa", "Banten": "Jawa", "Jabar": "Jawa",
+"Jateng": "Jawa", "D. I. Y.": "Jawa", "Jatim": "Jawa",
+
+# Kalimantan
+"Kalbar": "Kalimantan", "Kalsel": "Kalimantan", "Kalteng": "Kalimantan",
+"Kaltim": "Kalimantan", "Kaltara": "Kalimantan",
+
+# Sulawesi
+"Sultera": "Sulawesi", "Sulsel": "Sulawesi", "Sulbar": "Sulawesi",
+"Sulteng": "Sulawesi", "Sulut": "Sulawesi", "Gorontalo": "Sulawesi",
+
+# Bali Nusra
+"Bali": "Bali Nusra", "N. T. B.": "Bali Nusra", "N. T. T.": "Bali Nusra",
+
+# Indonesia Timur
+"Maluku": "Ind. Timur", "Maluku Utara": "Ind. Timur",
+"Papua Barat": "Ind. Timur", "Papua": "Ind. Timur"
+}
+
+
 # ==== Input Periode Data Bulan Ini ====
 with st.expander("Set Periode Data Bulan Ini", expanded=True):
         tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
@@ -90,9 +119,7 @@ if uploaded_current and uploaded_db and uploaded_map:
     current["Tahun"] = int(tahun_input)
     current["nbulan"] = int(bulan_input)
     current["Bulan"] = bulan_map[current["nbulan"]]
-
-    # Negara otomatis Domestik
-    current["Negara"] = "Domestik"
+    current["Pulau"] = current["Daerah"].map(daerah_to_pulau).fillna("Lainnya")
 
     # Negara otomatis Domestik
     current["Negara"] = "Domestik"
