@@ -4,6 +4,11 @@ import io
 
 st.title("Automasi Market Share & Mapping")
 
+# ==== Input Periode Data Bulan Ini ====
+with st.expander("Set Periode Data Bulan Ini", expanded=True):
+    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
+    bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
+
 # ==== Helper: pilih sheet ====
 def read_sheet_with_picker(uploaded_file, label, default_idx=0):
     xls = pd.ExcelFile(uploaded_file, engine="openpyxl")
@@ -99,11 +104,6 @@ def calc_ms_and_growth(df):
 uploaded_current = st.file_uploader("Upload Data Bulan Ini (Excel)", type=["xlsx"])
 uploaded_db = st.file_uploader("Upload Database (Excel)", type=["xlsx"])
 uploaded_map = st.file_uploader("Upload Mapping (Excel)", type=["xlsx"])
-
-# ==== Input Periode Data Bulan Ini ====
-with st.expander("Set Periode Data Bulan Ini", expanded=True):
-    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
-    bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
 
 if uploaded_current and uploaded_db and uploaded_map:
     # Data Bulan Ini default ke sheet ke-2 (index 1)
