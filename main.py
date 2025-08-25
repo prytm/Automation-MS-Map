@@ -9,11 +9,11 @@ with st.expander("Set Periode Data Bulan Ini", expanded=True):
         tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
         bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
 
-    # Mapping nbulan → nama bulan Indo
-    bulan_map = {
+# Mapping nbulan → nama bulan Indo
+bulan_map = {
         1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mei", 6: "Jun",
         7: "Jul", 8: "Agt", 9: "Sep", 10: "Okt", 11: "Nov", 12: "Des"
-    }
+}
 
 BASE_COLS = [
     "Tahun","Bulan","nbulan","Daerah","Pulau","Produsen",
