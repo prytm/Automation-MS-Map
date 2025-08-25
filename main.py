@@ -113,12 +113,15 @@ if uploaded_current and uploaded_db and uploaded_map:
     mapping_df = read_sheet_with_picker(uploaded_map, "Mapping", default_idx=0)
 
     # Terapkan periode & kolom turunan ke seluruh baris Data Bulan Ini
+    # Terapkan ke seluruh baris Data Bulan Ini
     current["Tahun"] = int(tahun_input)
-    current["nbulan"] = int(bulan_input)                 # 1..12 reset tiap tahun
-    current["Bulan"] = bulan_map[current["nbulan"]]      # singkatan Indo
-    current["Negara"] = "Domestik"                       # force Domestik
+    current["nbulan"] = int(bulan_input)
+    current["Bulan"] = current["nbulan"].astype(int).map(bulan_map)  # << perbaikan utama
+    current["Negara"] = "Domestik"
+    
     if "Daerah" in current.columns:
         current["Pulau"] = current["Daerah"].map(daerah_to_pulau).fillna("Lainnya")
+
 
     # pastikan Total numerik
     if "Total" in current.columns:
