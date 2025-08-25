@@ -4,10 +4,15 @@ import io
 
 st.title("Automasi Market Share & Mapping")
 
-# ==== Input Tahun & Bulan untuk Data Bulan Ini 
-tahun_input = st.number_input("Masukkan Tahun Data Bulan Ini", min_value=2000, max_value=2100, step=1)
-bulan_input = st.selectbox("Pilih Bulan Data Bulan Ini", list(range(1,13)), format_func=lambda x: f"{x:02d}")
-
+# ==== Input Periode Data Bulan Ini ====
+with st.expander("Set Periode Data Bulan Ini", expanded=True):
+    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
+    bulan_input = st.selectbox(
+        "Bulan",
+        list(range(1, 13)),
+        format_func=lambda x: pd.to_datetime(str(x), format="%m").strftime("%B")
+    )
+        
 BASE_COLS = [
     "Tahun","Bulan","nbulan","Daerah","Pulau","Produsen",
     "Total","Kemasan","Negara","Holding","Merk"
