@@ -85,6 +85,9 @@ if uploaded_current and uploaded_db and uploaded_map:
     current["nbulan"] = ((current["Tahun"].astype(int) - current["Tahun"].min()) * 12 
                              + current["Bulan"].astype(int))
 
+    # Negara otomatis Domestik
+    current["Negara"] = "Domestik"
+
     # --- ALIGN KOLUM & APPEND ---
     keep_cols = BASE_COLS + [c for c in ["Segment","Area AP"] if c in (set(db.columns)|set(current_core.columns))]
     keep_cols = [c for c in keep_cols if c in (set(db.columns)|set(current_core.columns))]
