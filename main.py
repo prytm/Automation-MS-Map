@@ -6,7 +6,7 @@ st.title("Automasi Market Share & Mapping")
 
 # ==== Input Periode Data Bulan Ini ====
 with st.expander("Set Periode Data Bulan Ini", expanded=True):
-    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
+    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1, value=2025)
     bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
 
 # ==== Helper: pilih sheet (hanya untuk Data Bulan Ini) ====
