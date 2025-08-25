@@ -4,6 +4,10 @@ import io
 
 st.title("Automasi Market Share & Mapping")
 
+# ==== Input Tahun & Bulan untuk Data Bulan Ini 
+tahun_input = st.number_input("Masukkan Tahun Data Bulan Ini", min_value=2000, max_value=2100, step=1)
+bulan_input = st.selectbox("Pilih Bulan Data Bulan Ini", list(range(1,13)), format_func=lambda x: f"{x:02d}")
+
 BASE_COLS = [
     "Tahun","Bulan","nbulan","Daerah","Pulau","Produsen",
     "Total","Kemasan","Negara","Holding","Merk"
@@ -74,6 +78,12 @@ if uploaded_current and uploaded_db and uploaded_map:
         current_core = current_core.merge(seg_map, on=["Merk","Daerah"], how="left")
     if area_map is not None:
         current_core = current_core.merge(area_map, on="Daerah", how="left")
+
+    # Tambahkan kolom Tahun & nbulan ke seluruh row Data Bulan Ini
+    current["Tahun"] = tahun_input
+    current["Bulan"] = bulan_input
+    current["nbulan"] = ((current["Tahun"].astype(int) - current["Tahun"].min()) * 12 
+                             + current["Bulan"].astype(int))
 
     # --- ALIGN KOLUM & APPEND ---
     keep_cols = BASE_COLS + [c for c in ["Segment","Area AP"] if c in (set(db.columns)|set(current_core.columns))]
