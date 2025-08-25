@@ -6,13 +6,15 @@ st.title("Automasi Market Share & Mapping")
 
 # ==== Input Periode Data Bulan Ini ====
 with st.expander("Set Periode Data Bulan Ini", expanded=True):
-    tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
-    bulan_input = st.selectbox(
-        "Bulan",
-        list(range(1, 13)),
-        format_func=lambda x: pd.to_datetime(str(x), format="%m").strftime("%B")
-    )
-        
+        tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1)
+        bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
+
+    # Mapping nbulan → nama bulan Indo
+    bulan_map = {
+        1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mei", 6: "Jun",
+        7: "Jul", 8: "Agt", 9: "Sep", 10: "Okt", 11: "Nov", 12: "Des"
+    }
+
 BASE_COLS = [
     "Tahun","Bulan","nbulan","Daerah","Pulau","Produsen",
     "Total","Kemasan","Negara","Holding","Merk"
@@ -84,11 +86,13 @@ if uploaded_current and uploaded_db and uploaded_map:
     if area_map is not None:
         current_core = current_core.merge(area_map, on="Daerah", how="left")
 
-    # Tambahkan kolom Tahun & nbulan ke seluruh row Data Bulan Ini
-    current["Tahun"] = tahun_input
-    current["Bulan"] = bulan_input
-    current["nbulan"] = ((current["Tahun"].astype(int) - current["Tahun"].min()) * 12 
-                             + current["Bulan"].astype(int))
+    # Terapkan ke seluruh baris Data Bulan Ini
+    current["Tahun"] = int(tahun_input)
+    current["nbulan"] = int(bulan_input)
+    current["Bulan"] = bulan_map[current["nbulan"]]
+
+    # Negara otomatis Domestik
+    current["Negara"] = "Domestik"
 
     # Negara otomatis Domestik
     current["Negara"] = "Domestik"
