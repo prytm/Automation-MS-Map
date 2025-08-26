@@ -156,6 +156,7 @@ if start:
     for c in ["Tahun","Bulan","Daerah","Merk","Kemasan"]:
         if c not in final.columns:
             final[c] = ""
+    
     final["X"] = (
         final["Tahun"].astype(str) +
         final["Bulan"].astype(str) +
@@ -163,11 +164,14 @@ if start:
         final["Merk"].astype(str) +
         final["Kemasan"].astype(str)
     )
-
-    # Reorder kolom (X paling depan)
-    final = [["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total","Kemasan",
+    
+    # === REORDER KOLUM ===
+    desired_order = ["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total","Kemasan",
                      "Negara","Holding","Merk","nbulan","MS","MoM Growth %","YoY Growth %",
-                     "YtD Growth %","Total Merk YtD","Total All YtD","MSY"]]
+                     "YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
+    
+    final = final[[c for c in desired_order if c in final.columns]]
+
 
     st.success(f"Ok! Baris: {len(final):,}")
     st.write("Kolom tersedia:", list(final.columns))
