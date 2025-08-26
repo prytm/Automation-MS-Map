@@ -99,24 +99,24 @@ if not (uploaded_current and uploaded_db and uploaded_map):
 
 if start:
     # current sudah dibaca dari sheet yang dipilih
-    db = pd.read_excel(uploaded_db)           # tanpa picker, sheet pertama
-    mapping_df = pd.read_excel(uploaded_map)  # tanpa picker, sheet pertama
+    db = pd.read_excel(uploaded_db) # tanpa picker, sheet pertama
+    mapping_df = pd.read_excel(uploaded_map) # tanpa picker, sheet pertama
 
     # Terapkan periode & kolom turunan ke seluruh baris Data Bulan Ini
-    current["Tahun"]  = int(tahun_input)
-    current["nbulan"] = int(bulan_input)  # 1..12 reset per tahun
-    current["Bulan"]  = current["nbulan"].astype(int).map(bulan_map)
+    current["Tahun"] = int(tahun_input)
+    current["nbulan"] = int(bulan_input) # 1..12 reset per tahun
+    current["Bulan"] = current["nbulan"].astype(int).map(bulan_map)
     current["Negara"] = "Domestik"
     if "Daerah" in current.columns:
         current["Pulau"] = current["Daerah"].map(daerah_to_pulau).fillna("Lainnya")
 
     # pastikan Total numerik
     if "Total" in current.columns: current["Total"] = to_numeric_series(current["Total"])
-    if "Total" in db.columns:      db["Total"]      = to_numeric_series(db["Total"])
+    if "Total" in db.columns: db["Total"] = to_numeric_series(db["Total"])
 
     # --- MAP HANYA DATA BULAN INI (Segment / Area AP jika ada di mapping) ---
     current_core = safe_select(current, BASE_COLS)
-    seg_map  = (mapping_df.drop_duplicates(["Merk","Daerah"])[["Merk","Daerah","Segment"]]
+    seg_map = (mapping_df.drop_duplicates(["Merk","Daerah"])[["Merk","Daerah","Segment"]]
                 if {"Merk","Daerah","Segment"}.issubset(mapping_df.columns) else None)
     area_map = (mapping_df.drop_duplicates(["Daerah"])[["Daerah","Area AP"]]
                 if {"Daerah","Area AP"}.issubset(mapping_df.columns) else None)
@@ -128,7 +128,7 @@ if start:
     # --- ALIGN KOLUM & APPEND ---
     keep_cols = BASE_COLS + [c for c in ["Segment","Area AP"] if c in (set(db.columns) | set(current_core.columns))]
     keep_cols = [c for c in keep_cols if c in (set(db.columns) | set(current_core.columns))]
-    db_aligned      = safe_select(db, keep_cols)
+    db_aligned = safe_select(db, keep_cols)
     current_aligned = safe_select(current_core, keep_cols)
 
     # OPTIONAL: REPLACE MODE (hindari duplikat bulan yang sama di DB)
@@ -144,36 +144,22 @@ if start:
     # --- HITUNG ---
     result = calc_ms_and_growth(combined)
 
-    final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %",
-                              "Total Merk YtD","Total All YtD","MSY"]
+    final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
     final_cols = [c for c in final_cols if c in result.columns]
-
     final = (result[final_cols]
              .sort_values(["Tahun","nbulan","Merk"])
              .reset_index(drop=True))
 
-    # === BUAT KOLOM X ===
-    for c in ["Tahun","Bulan","Daerah","Merk","Kemasan"]:
-        if c not in final.columns:
-            final[c] = ""
-    
-    final["X"] = (
-        final["Tahun"].astype(str) +
-        final["Bulan"].astype(str) +
-        final["Daerah"].astype(str) +
-        final["Merk"].astype(str) +
-        final["Kemasan"].astype(str)
-    )
-    
-    # === REORDER KOLUM ===
-    final = final[["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total",
-               "Kemasan","Negara","Holding","Merk","nbulan","MS",
-               "MoM Growth %","YoY Growth %","YtD Growth %",
-               "Total Merk YtD","Total All YtD","MSY"]]
+    final["X"] = final["Tahun"].astype(str) + \
+          final["Bulan"].astype(str) + \
+          final["Daerah"].astype(str) + \
+          final["Merk"].astype(str) + \
+          final["Kemasan"].astype(str)
 
+    final = final["X", "Tahun", "Bulan", "Daerah", "Pulau", "Produsen", "Total", "Kemasan", "Negara" "Holding",
+    "Merk", "nbulan","MS","MoM Growth %","YoY Growth %","YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
 
     st.success(f"Ok! Baris: {len(final):,}")
-    st.write("Kolom tersedia:", list(final.columns))
 
     # --- EXPORT & PREVIEW ---
     buf = io.BytesIO()
