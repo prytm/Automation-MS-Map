@@ -144,34 +144,40 @@ if start:
     # --- HITUNG ---
     result = calc_ms_and_growth(combined)
     
-    final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %",
-                              "Total Merk YtD","Total All YtD","MSY"]
-    final_cols = [c for c in final_cols if c in result.columns]
+    # --- BUAT KOLUMN X DI AWAL (langsung di result) ---
+    for c in ["Tahun", "Bulan", "Daerah", "Merk", "Kemasan"]:
+        if c not in result.columns:
+            result[c] = ""  # jaga-jaga
+    result["X"] = (
+        result["Tahun"].fillna("").astype(str) +
+        result["Bulan"].fillna("").astype(str) +
+        result["Daerah"].fillna("").astype(str) +
+        result["Merk"].fillna("").astype(str) +
+        result["Kemasan"].fillna("").astype(str)
+    )
+    
+    # --- SUSUN KOLOM AKHIR ---
+    final_cols = keep_cols + [
+        "MS","MoM Growth %","YoY Growth %","YtD Growth %",
+        "Total Merk YtD","Total All YtD","MSY"
+    ]
+    # pastikan X ikut
+    final_cols = ["X"] + [c for c in final_cols if c in result.columns]
     
     final = (result[final_cols]
              .sort_values(["Tahun","nbulan","Merk"])
              .reset_index(drop=True))
     
-    # --- BUAT KUNCI X (tanpa pemisah) ---
-    for c in ["Tahun", "Bulan", "Daerah", "Merk", "Kemasan"]:
-        if c not in final.columns:
-            final[c] = ""  # pastikan kolom ada agar concat aman
-    
-    final["X"] = (
-        final["Tahun"].fillna("").astype(str) +
-        final["Bulan"].fillna("").astype(str) +
-        final["Daerah"].fillna("").astype(str) +
-        final["Merk"].fillna("").astype(str) +
-        final["Kemasan"].fillna("").astype(str)
-    )
-    
-    # --- URUTKAN KOLUM SESUAI YANG DIINGINKAN (hanya yang tersedia) ---
+    # --- URUTAN SESUAI KEINGINAN (hanya yang ada) ---
     desired_order = ["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total",
                      "Kemasan","Negara","Holding","Merk","nbulan",
                      "MS","MoM Growth %","YoY Growth %","YtD Growth %",
                      "Total Merk YtD","Total All YtD","MSY"]
-    
     final = final[[c for c in desired_order if c in final.columns]]
+    
+    # --- CEK CEPAT ---
+    st.write("Kolom saat ini:", list(final.columns))
+    st.write("Apakah 'X' ada?:", "X" in final.columns)
     
     st.success(f"Ok! Baris: {len(final):,}")
     
@@ -187,4 +193,3 @@ if start:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     st.dataframe(final.head(50))
-
