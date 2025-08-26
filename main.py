@@ -143,44 +143,35 @@ if start:
 
     # --- HITUNG ---
     result = calc_ms_and_growth(combined)
-    
-    # --- BUAT KOLUMN X DI AWAL (langsung di result) ---
-    for c in ["Tahun", "Bulan", "Daerah", "Merk", "Kemasan"]:
-        if c not in result.columns:
-            result[c] = ""  # jaga-jaga
-    result["X"] = (
-        result["Tahun"].fillna("").astype(str) +
-        result["Bulan"].fillna("").astype(str) +
-        result["Daerah"].fillna("").astype(str) +
-        result["Merk"].fillna("").astype(str) +
-        result["Kemasan"].fillna("").astype(str)
-    )
-    
-    # --- SUSUN KOLOM AKHIR ---
-    final_cols = keep_cols + [
-        "MS","MoM Growth %","YoY Growth %","YtD Growth %",
-        "Total Merk YtD","Total All YtD","MSY"
-    ]
-    # pastikan X ikut
-    final_cols = ["X"] + [c for c in final_cols if c in result.columns]
-    
+
+    final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %",
+                              "Total Merk YtD","Total All YtD","MSY"]
+    final_cols = [c for c in final_cols if c in result.columns]
+
     final = (result[final_cols]
              .sort_values(["Tahun","nbulan","Merk"])
              .reset_index(drop=True))
-    
-    # --- URUTAN SESUAI KEINGINAN (hanya yang ada) ---
-    desired_order = ["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total",
-                     "Kemasan","Negara","Holding","Merk","nbulan",
-                     "MS","MoM Growth %","YoY Growth %","YtD Growth %",
-                     "Total Merk YtD","Total All YtD","MSY"]
-    final = final[[c for c in desired_order if c in final.columns]]
-    
-    # --- CEK CEPAT ---
-    st.write("Kolom saat ini:", list(final.columns))
-    st.write("Apakah 'X' ada?:", "X" in final.columns)
-    
+
+    # === BUAT KOLOM X ===
+    for c in ["Tahun","Bulan","Daerah","Merk","Kemasan"]:
+        if c not in final.columns:
+            final[c] = ""
+    final["X"] = (
+        final["Tahun"].astype(str) +
+        final["Bulan"].astype(str) +
+        final["Daerah"].astype(str) +
+        final["Merk"].astype(str) +
+        final["Kemasan"].astype(str)
+    )
+
+    # Reorder kolom (X paling depan)
+    final = [["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total","Kemasan",
+                     "Negara","Holding","Merk","nbulan","MS","MoM Growth %","YoY Growth %",
+                     "YtD Growth %","Total Merk YtD","Total All YtD","MSY"]]
+
     st.success(f"Ok! Baris: {len(final):,}")
-    
+    st.write("Kolom tersedia:", list(final.columns))
+
     # --- EXPORT & PREVIEW ---
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as w:
