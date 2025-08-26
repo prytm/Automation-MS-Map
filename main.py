@@ -156,8 +156,8 @@ if start:
           final["Merk"].astype(str) + \
           final["Kemasan"].astype(str)
 
-    final = final["X", "Tahun", "Bulan", "Daerah", "Pulau", "Produsen", "Total", "Kemasan", "Negara" "Holding",
-    "Merk", "nbulan","MS","MoM Growth %","YoY Growth %","YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
+    final = final[["X", "Tahun", "Bulan", "Daerah", "Pulau", "Produsen", "Total", "Kemasan", "Negara" "Holding",
+    "Merk", "nbulan","MS","MoM Growth %","YoY Growth %","YtD Growth %","Total Merk YtD","Total All YtD","MSY"]]
 
     st.success(f"Ok! Baris: {len(final):,}")
 
