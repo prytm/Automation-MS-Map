@@ -166,11 +166,10 @@ if start:
     )
     
     # === REORDER KOLUM ===
-    desired_order = ["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total","Kemasan",
-                     "Negara","Holding","Merk","nbulan","MS","MoM Growth %","YoY Growth %",
-                     "YtD Growth %","Total Merk YtD","Total All YtD","MSY"]
-    
-    final = final[[c for c in desired_order if c in final.columns]]
+    final = final[["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total",
+               "Kemasan","Negara","Holding","Merk","nbulan","MS",
+               "MoM Growth %","YoY Growth %","YtD Growth %",
+               "Total Merk YtD","Total All YtD","MSY"]]
 
 
     st.success(f"Ok! Baris: {len(final):,}")
