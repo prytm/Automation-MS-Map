@@ -11,6 +11,11 @@ with st.expander("Set Periode Data Bulan Ini", expanded=True):
     tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1, value=2025)
     bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
 
+# ==== Uploads ====
+uploaded_current = st.file_uploader("Upload Data Bulan Ini (Excel)", type=["xlsx"])
+uploaded_db      = st.file_uploader("Upload Database (Excel)", type=["xlsx"])
+uploaded_map     = st.file_uploader("Upload Mapping (Excel)", type=["xlsx"])
+
 # -------- CONFIG KONSTAN (index pandas = 0-based) ----------
 ROW_PRODUSEN = 6 - 1   # 6 di Excel -> 5 di pandas, tapi kita pakai 0-based jadi 5
 ROW_KEMASAN  = 7 - 1
@@ -235,11 +240,6 @@ def calc_ms_and_growth(df):
     for col in ["MoM Growth %","YoY Growth %","YtD Growth %"]:
         df[col] = df[col].replace([float("inf"), float("-inf")], 1.0)
     return df
-
-# ==== Uploads ====
-uploaded_current = st.file_uploader("Upload Data Bulan Ini (Excel)", type=["xlsx"])
-uploaded_db      = st.file_uploader("Upload Database (Excel)", type=["xlsx"])
-uploaded_map     = st.file_uploader("Upload Mapping (Excel)", type=["xlsx"])
 
 # Tampilkan picker sheet segera setelah file 'Data Bulan Ini' di-upload
 current = df_long
