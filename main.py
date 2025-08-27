@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import io
+import numpy as np
+import re
 
 st.title("Automasi Market Share & Mapping")
 
@@ -8,6 +10,166 @@ st.title("Automasi Market Share & Mapping")
 with st.expander("Set Periode Data Bulan Ini", expanded=True):
     tahun_input = st.number_input("Tahun", min_value=2000, max_value=2100, step=1, value=2025)
     bulan_input = st.selectbox("Bulan (1–12)", list(range(1, 13)))
+
+# -------- CONFIG KONSTAN (index pandas = 0-based) ----------
+ROW_PRODUSEN = 6 - 1   # 6 di Excel -> 5 di pandas, tapi kita pakai 0-based jadi 5
+ROW_KEMASAN  = 7 - 1
+ROW_MERK     = 52 - 1
+ROW_HOLDING  = 53 - 1
+ROW_DATA_START = 8 - 1
+
+# --------- UTIL ---------
+def header_text(df, r, c):
+    """Ambil teks header; untuk cell merged (yang bukan top-left) biasanya NaN -> anggap ''."""
+    try:
+        v = df.iat[r, c]
+    except Exception:
+        return ""
+    if pd.isna(v):
+        return ""
+    return str(v)
+
+def clean_text(s):
+    return str(s).strip()
+
+def clean_kemasan(s):
+    s = clean_text(s)
+    return "Bulk" if s.lower() == "curah" else s
+
+def to_number(v):
+    if pd.isna(v):
+        return 0.0
+    s = str(v).strip()
+    if s in ("", "-"):
+        return 0.0
+    # buang pemisah ribuan umum
+    s = re.sub(r"[.,](?=\d{3}\b)", "", s)
+    # ganti koma desimal jadi titik (optional)
+    s = s.replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        try:
+            return float(re.sub(r"[^\d.-]", "", s))
+        except Exception:
+            return 0.0
+
+def stop_at_this_column(df, col):
+    """True jika sel data pertama di bawah header (ROW_DATA_START) kosong / '-'."""
+    v = header_text(df, ROW_DATA_START, col)
+    return (v.strip() == "" or v.strip() == "-")
+
+def find_col_provinsi(df, max_col):
+    """Cari kolom 'Provinsi' di row 6/7/52 (flex)."""
+    for c in range(0, max_col+1):
+        t6 = header_text(df, ROW_PRODUSEN, c).replace(" ", "").upper()
+        t7 = header_text(df, ROW_KEMASAN,  c).replace(" ", "").upper()
+        t52 = header_text(df, ROW_MERK,    c).replace(" ", "").upper()
+        if "PROVINSI" in t6 or "PROVINSI" in t7 or "PROVINSI" in t52:
+            return c
+    return None
+
+# --------- FUNGSI UTAMA ---------
+def unpivot_produsen_holding_merk(xlsx_path, sheet_name=0):
+    """
+    Return DataFrame long-format:
+    ['Daerah','Kemasan','Produsen','Holding','Merk','Total','OrderKey']
+    """
+    # baca apa adanya (tanpa header), biar grid mentah
+    df = pd.read_excel(
+        xlsx_path, sheet_name=sheet_name, header=None, engine="openpyxl", dtype=str
+    )
+
+    # batas kolom terpakai (ambil dari baris kemasan)
+    max_col = int(df.iloc[ROW_KEMASAN].last_valid_index()) if df.shape[1] else -1
+    if max_col < 0:
+        raise ValueError("Sheet tampaknya kosong / baris kemasan tidak ditemukan.")
+
+    col_prov = find_col_provinsi(df, max_col)
+    if col_prov is None:
+        raise ValueError("Kolom 'Provinsi' tidak ditemukan di baris 6/7/52.")
+
+    first_data_col = col_prov + 1
+
+    # ---- 1) Bangun urutan Produsen (kiri->kanan) utk OrderKey ----
+    produsen_order = []
+    for c in range(first_data_col, max_col + 1):
+        if stop_at_this_column(df, c):
+            break
+        produsen = clean_text(header_text(df, ROW_PRODUSEN, c))
+        kemasan  = clean_kemasan(header_text(df, ROW_KEMASAN,  c))
+        if produsen and kemasan in ("Bag", "Bulk"):
+            if produsen not in produsen_order:
+                produsen_order.append(produsen)
+
+    # map produsen -> index 1-based (biar sama dengan VBA yang pakai urut + 1)
+    produsen_to_idx = {p: i+1 for i, p in enumerate(produsen_order)}
+
+    # ---- 2) Build rows (Bag dulu, Bulk kemudian) ----
+    records = []
+    for pass_type in ("Bag", "Bulk"):
+        blank_run = 0
+        r = ROW_DATA_START
+        # batas baris terpakai
+        max_row = df.shape[0] - 1
+        while r <= max_row:
+            daerah = clean_text(header_text(df, r, col_prov))
+            # Stop bawah
+            if daerah.upper().startswith("CATATAN"):
+                break
+            if daerah == "":
+                blank_run += 1
+                if blank_run >= 2:
+                    break
+                r += 1
+                continue
+            else:
+                blank_run = 0
+
+            if daerah.upper().startswith("TOTAL"):
+                r += 1
+                continue
+
+            # loop kolom data
+            for c in range(first_data_col, max_col + 1):
+                if stop_at_this_column(df, c):
+                    break
+
+                merk    = clean_text(header_text(df, ROW_MERK,    c))
+                prod    = clean_text(header_text(df, ROW_PRODUSEN, c))
+                holding = clean_text(header_text(df, ROW_HOLDING,  c))
+                kemasan = clean_kemasan(header_text(df, ROW_KEMASAN, c))
+
+                if prod and kemasan in ("Bag", "Bulk") and kemasan == pass_type:
+                    val = to_number(header_text(df, r, c))
+                    type_rank = 0 if pass_type == "Bag" else 100
+                    if prod in produsen_to_idx:
+                        order_key = type_rank + produsen_to_idx[prod]
+                        records.append({
+                            "Daerah": daerah,
+                            "Kemasan": kemasan,
+                            "Produsen": prod,
+                            "Holding": holding,
+                            "Merk": merk,
+                            "Total": val,
+                            "OrderKey": order_key
+                        })
+            r += 1
+
+    # ke DataFrame + sort
+    out = pd.DataFrame.from_records(records)
+    if not out.empty:
+        out = out.sort_values(["Daerah", "OrderKey"], kind="mergesort").reset_index(drop=True)
+    return out
+
+# ------------- CONTOH PAKAI -------------
+if __name__ == "__main__":
+    # ganti path & sheet sesuai file kamu
+    path = "input.xlsx"
+    df_long = unpivot_produsen_holding_merk(path, sheet_name=0)
+    # simpan hasil
+    df_long.to_excel("LongFormat.xlsx", index=False)
+    print("Done. Baris:", len(df_long))
 
 # ==== Helper: pilih sheet (hanya untuk Data Bulan Ini) ====
 def read_sheet_with_picker(uploaded_file, default_idx=1):
@@ -83,9 +245,7 @@ uploaded_db      = st.file_uploader("Upload Database (Excel)", type=["xlsx"])
 uploaded_map     = st.file_uploader("Upload Mapping (Excel)", type=["xlsx"])
 
 # Tampilkan picker sheet segera setelah file 'Data Bulan Ini' di-upload
-current = None
-if uploaded_current:
-    current = read_sheet_with_picker(uploaded_current, default_idx=1)
+current = uploaded_current
 
 # Tombol start: hanya enable kalau semua file sudah diupload
 start = st.button(
