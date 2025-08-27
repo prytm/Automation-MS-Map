@@ -244,7 +244,7 @@ if uploaded_current is not None:
         sheet_sel = st.selectbox("Pilih Sheet • Data Bulan Ini", sheet_names, index=0)
         df_long = unpivot_produsen_holding_merk(cur_bytes, sheet_name=sheet_sel)
         st.success(f"Unpivot OK • Baris: {len(df_long):,}")
-        st.dataframe(df_long.head(30), use_container_width=True)
+        st.dataframe(df_long.head(5), use_container_width=True)
     except Exception as e:
         st.error(f"Gagal unpivot Data Bulan Ini: {e}")
 
@@ -335,7 +335,7 @@ if start:
         final = safe_select(final, desired)
 
         st.success(f"Selesai! Baris hasil: {len(final):,}")
-        st.dataframe(final.head(50), use_container_width=True)
+        st.dataframe(final.head(5), use_container_width=True)
 
         # Download Excel
         buf = io.BytesIO()
