@@ -165,11 +165,8 @@ def unpivot_produsen_holding_merk(xlsx_path, sheet_name=0):
 # ------------- CONTOH PAKAI -------------
 if __name__ == "__main__":
     # ganti path & sheet sesuai file kamu
-    path = "input.xlsx"
+    path = uploaded_current
     df_long = unpivot_produsen_holding_merk(path, sheet_name=0)
-    # simpan hasil
-    df_long.to_excel("LongFormat.xlsx", index=False)
-    print("Done. Baris:", len(df_long))
 
 # ==== Helper: pilih sheet (hanya untuk Data Bulan Ini) ====
 def read_sheet_with_picker(uploaded_file, default_idx=1):
@@ -245,13 +242,13 @@ uploaded_db      = st.file_uploader("Upload Database (Excel)", type=["xlsx"])
 uploaded_map     = st.file_uploader("Upload Mapping (Excel)", type=["xlsx"])
 
 # Tampilkan picker sheet segera setelah file 'Data Bulan Ini' di-upload
-current = uploaded_current
+current = df_long
 
 # Tombol start: hanya enable kalau semua file sudah diupload
 start = st.button(
     "Start Proses",
     type="primary",
-    disabled=not (uploaded_current and uploaded_db and uploaded_map and current is not None)
+    disabled=not (df_long and uploaded_db and uploaded_map and current is not None)
 )
 
 if not (uploaded_current and uploaded_db and uploaded_map):
