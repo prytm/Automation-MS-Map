@@ -36,62 +36,64 @@ bulan_map = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"Mei",6:"Jun",7:"Jul",8:"Agt",9:"
 # ==========
 # UTILITIES
 # ==========
-def header_text(df: pd.DataFrame, r: int, c: int) -> str:
+def header_text(df: pd.DataFrame, r: int, c: int) -> str: # Ambil isi sel dari grid mentah, aman terhadap NaN & Out of Range
     """Ambil teks grid; NaN => ''."""
     try:
-        v = df.iat[r, c]
+        v = df.iat[r, c] # Coba akses df.iat[r,c] (row & column)
     except Exception:
-        return ""
+        return "" # Jika gagal/Nan, kembalikan "" (string kosong)
     return "" if pd.isna(v) else str(v)
 
 def clean_text(s: str) -> str:
-    return str(s).strip()
+    return str(s).strip() # Pastikan tipe String & Buang spasi kiri/kanan
 
 def clean_kemasan(s: str) -> str:
     s = clean_text(s)
-    return "Bulk" if s.lower() == "curah" else s
+    return "Bulk" if s.lower() == "curah" else s # Digunakan apakah konsisten Bag/Bluk
 
 def to_number(v) -> float:
-    if pd.isna(v): return 0.0
+    if pd.isna(v): return 0.0 # Rubah NaN jadi 0.0
     s = str(v).strip()
-    if s in ("", "-"): return 0.0
+    if s in ("", "-"): return 0.0 # Rubah "" dan "-" jadi 0.0
     # buang pemisah ribuan umum
-    s = re.sub(r"[.,](?=\d{3}\b)", "", s)
-    s = s.replace(",", ".")
+    s = re.sub(r"[.,](?=\d{3}\b)", "", s) # Hapus pemisah ribuan dengan RegEx
+    s = s.replace(",", ".") # Ganti koma jadi titik (inggris)
     try:
-        return float(s)
+        return float(s) # Bersihkan karakter non digit menggunakan float
     except Exception:
         try:
-            return float(re.sub(r"[^\d.-]", "", s))
+            return float(re.sub(r"[^\d.-]", "", s)) # Bersihkan karakter non digit menggunakan float RegEx
         except Exception:
-            return 0.0
+            return 0.0 # Kalau masih gagal, ganti jadi 0.0
 
-def stop_at_this_column(df: pd.DataFrame, col: int) -> bool:
+def stop_at_this_column(df: pd.DataFrame, col: int) -> bool: # Tujuan: Deteksi batas kanan
     """True jika sel data pertama (ROW_DATA_START) kosong / '-'."""
-    v = header_text(df, ROW_DATA_START, col)
-    return (v.strip() == "" or v.strip() == "-")
+    v = header_text(df, ROW_DATA_START, col) # Logika: Lihat baris data pertama di kolom tsb (row 8)
+    return (v.strip() == "" or v.strip() == "-") # Jika kosong/"-" artinya stop disini
 
-def find_col_provinsi(df: pd.DataFrame, max_col: int):
+def find_col_provinsi(df: pd.DataFrame, max_col: int): # Loop semua kolom dari c=0 sampai max_col
     """Cari kolom 'Provinsi' fleksibel di row 6/7/52."""
     for c in range(0, max_col+1):
-        t6  = header_text(df, ROW_PRODUSEN, c).replace(" ", "").upper()
-        t7  = header_text(df, ROW_KEMASAN,  c).replace(" ", "").upper()
-        t52 = header_text(df, ROW_MERK,     c).replace(" ", "").upper()
-        if "PROVINSI" in t6 or "PROVINSI" in t7 or "PROVINSI" in t52:
+        t6  = header_text(df, ROW_PRODUSEN, c).replace(" ", "").upper() # Baca Header row 6
+        t7  = header_text(df, ROW_KEMASAN,  c).replace(" ", "").upper() # Baca Header row 7
+        t52 = header_text(df, ROW_MERK,     c).replace(" ", "").upper() # Baca Header row 52
+        if "PROVINSI" in t6 or "PROVINSI" in t7 or "PROVINSI" in t52: # Cari string Provinsi di row 6/7/52
             return c
     return None
 
-def to_numeric_series(s: pd.Series) -> pd.Series:
+def to_numeric_series(s: pd.Series) -> pd.Series: # Konversi satu kolom Series ke numerik aman (untuk DataFrame "bulan ini"/Database)
     return (
         s.astype(str)
          .str.replace(r"[.,](?=\d{3}\b)", "", regex=True)
-         .str.replace("-", "0")
-         .replace({"nan":"0","None":"0"})
+         .str.replace("-", "0") # Ganti "-" menjadi 0
+         .replace({"nan":"0","None":"0"}) # Ganti NaN/None menjadi 0
          .astype(float)
     )
 
 def safe_select(df: pd.DataFrame, cols: list) -> pd.DataFrame:
-    return df[[c for c in cols if c in df.columns]].copy()
+    return df[[c for c in cols if c in df.columns]].copy() # Pilih subset kolom tanpa error kalau ada kolom yang hilang
+    # Logika: Kasih hanya kolom yang memang ada di df
+    # Khawatir ada beda kolom di databse Current & Database ASI
 
 # ==============================
 # UNPIVOT: PRODUSEN-HOLDING-MERK
