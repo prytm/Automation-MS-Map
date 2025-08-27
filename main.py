@@ -5,6 +5,37 @@ import numpy as np
 import re
 import io
 
+# === SIDEBAR: Panduan Format Data Bulan Ini ===
+st.sidebar.title("📘 Panduan Format Data Bulan Ini")
+st.sidebar.markdown("""
+**Header (per baris):**
+- **Row 6** → Produsen  
+- **Row 7** → Kemasan *(Bag/Bulk; “Curah” dianggap Bulk)*  
+- **Row 52** → Merk  
+- **Row 53** → Holding  
+- **Row 8 ke bawah** → Daerah/Provinsi & data angka  
+
+**Ketentuan:**
+- Kolom **Provinsi** harus ada kata *“Provinsi”* di salah satu header (row 6/7/52).  
+- **Stop kanan**: jika Row 8 di kolom tsb kosong / “-”.  
+- **Stop bawah**: 2 baris kosong berturut-turut atau baris diawali *“CATATAN”*.  
+- Baris subtotal **“TOTAL …”** akan di-skip.  
+- Nilai kosong / “-” → dianggap **0**.  
+- Header boleh merge, asal isi ada di sel kiri-atas merge.  
+- Gunakan nama Produsen/Merk/Holding konsisten.  
+
+**Contoh layout ringkas:**
+- Row 6: `Provinsi | PT. A | PT. A | PT. B | …`  
+- Row 7: `Provinsi | Bag   | Bulk  | Bag   | …`  
+- Row 52: `Provinsi | M1    | M1    | M2    | …`  
+- Row 53: `Provinsi | H1    | H1    | H2    | …`  
+- Row 8+: `Aceh, Sumut, …` dengan angka sesuai header  
+
+👉 Setelah kolom terakhir → 1 kolom kosong/“-”  
+👉 Setelah baris terakhir → 2 baris kosong **atau** baris *“CATATAN”*
+""")
+
+
 # =========================
 # KONFIGURASI HEADER & DATA
 # =========================
