@@ -3,3 +3,4 @@ numpy
 openpyxl
 streamlit
 re
+io
