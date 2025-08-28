@@ -104,69 +104,69 @@ def unpivot_produsen_holding_merk(xlsx_bytes: bytes, sheet_name=0) -> pd.DataFra
     ['Daerah','Kemasan','Produsen','Holding','Merk','Total','OrderKey']
     """
     # baca grid mentah tanpa header
-    df = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=sheet_name, header=None, engine="openpyxl", dtype=str)
-    if df.shape[1] == 0:
+    df = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=sheet_name, header=None, engine="openpyxl", dtype=str) # Baca Grid mentah
+    if df.shape[1] == 0: # Kalo gaada isinya, ya error
         raise ValueError("Sheet kosong.")
 
     # batas kolom → pakai baris kemasan
-    max_col = int(df.iloc[ROW_KEMASAN].last_valid_index()) if df.shape[1] else -1
+    max_col = int(df.iloc[ROW_KEMASAN].last_valid_index()) if df.shape[1] else -1 # Kolom terakhir yang terisi di row kemasan (baris 7 excel)
     if max_col < 0:
         raise ValueError("Baris kemasan (row 7) kosong / tidak ditemukan.")
 
-    col_prov = find_col_provinsi(df, max_col)
+    col_prov = find_col_provinsi(df, max_col) # Kolom yang memuat Provinsi
     if col_prov is None:
         raise ValueError("Kolom 'Provinsi' tidak ditemukan di row 6/7/52.")
 
-    first_data_col = col_prov + 1
+    first_data_col = col_prov + 1 # Kolom data dimulai setelah kolom yang memuat "PROVINSI"
 
     # Urutan produsen untuk OrderKey (kiri->kanan)
     produsen_order = []
     for c in range(first_data_col, max_col + 1):
-        if stop_at_this_column(df, c):
+        if stop_at_this_column(df, c): # True: Jika baris data pertama kosong/"-" maka Stop
             break
         produsen = clean_text(header_text(df, ROW_PRODUSEN, c))
         kemasan  = clean_kemasan(header_text(df, ROW_KEMASAN,  c))
-        if produsen and kemasan in ("Bag", "Bulk"):
-            if produsen not in produsen_order:
+        if produsen and kemasan in ("Bag", "Bulk"): # Jika produsen ada dan kemasan (bag/bul), append ke proudsen_order
+            if produsen not in produsen_order: # Ini untuk mencegah duplikat
                 produsen_order.append(produsen)
-    produsen_to_idx = {p: i+1 for i, p in enumerate(produsen_order)}
+    produsen_to_idx = {p: i+1 for i, p in enumerate(produsen_order)} # Produsen disortir per daerah sesuai urutan produsen
 
     # Build records: Bag dulu, Bulk belakangan
     records = []
-    for pass_type in ("Bag", "Bulk"):
+    for pass_type in ("Bag", "Bulk"): # Pisahkan supaya proses sortir mudah
         blank_run = 0
-        r = ROW_DATA_START
-        max_row = df.shape[0] - 1
+        r = ROW_DATA_START # Row dimulai dari data start (baris 8 excel)
+        max_row = df.shape[0] - 1 # Sampai akhir
         while r <= max_row:
             daerah = clean_text(header_text(df, r, col_prov))
             # Stop bawah:
-            if daerah.upper().startswith("CATATAN"):
+            if daerah.upper().startswith("CATATAN"): # Stop kalo daerah diawal "CATATAN"
                 break
-            if daerah == "":
+            if daerah == "": 
                 blank_run += 1
-                if blank_run >= 2:
+                if blank_run >= 2: # Stop kalo ketemu 2 baris kosong berturut-turut
                     break
                 r += 1
                 continue
             else:
                 blank_run = 0
 
-            if daerah.upper().startswith("TOTAL"):
-                r += 1
+            if daerah.upper().startswith("TOTAL"): # Skip daerah jika diawal "TOTAL"
+                r += 1 # Skip
                 continue
 
             # Loop kolom data
             for c in range(first_data_col, max_col + 1):
-                if stop_at_this_column(df, c):
+                if stop_at_this_column(df, c): # True, jika row 8 kosong stop ke kanan
                     break
 
-                merk    = clean_text(header_text(df, ROW_MERK,     c))
-                prod    = clean_text(header_text(df, ROW_PRODUSEN,  c))
-                holding = clean_text(header_text(df, ROW_HOLDING,   c))
-                kemasan = clean_kemasan(header_text(df, ROW_KEMASAN, c))
+                merk    = clean_text(header_text(df, ROW_MERK,     c)) # Ambil meta data kolom: Merk ~ Row 52
+                prod    = clean_text(header_text(df, ROW_PRODUSEN,  c)) # Ambil meta data kolom: Produsen ~ Row 6
+                holding = clean_text(header_text(df, ROW_HOLDING,   c)) # Ambil meta data kolom: Holding ~ Row 53
+                kemasan = clean_kemasan(header_text(df, ROW_KEMASAN, c)) # Ambil meta data kolom: Kemasan ~ Row 7
 
-                if prod and kemasan in ("Bag", "Bulk") and kemasan == pass_type:
-                    val = to_number(header_text(df, r, c))
+                if prod and kemasan in ("Bag", "Bulk") and kemasan == pass_type: # Kalau kemasan cocok (Bag, Bulk) dan produsen tidak kosong
+                    val = to_number(header_text(df, r, c)) # Ambil metadata (Total)
                     type_rank = 0 if pass_type == "Bag" else 100
                     if prod in produsen_to_idx:
                         order_key = type_rank + produsen_to_idx[prod]
