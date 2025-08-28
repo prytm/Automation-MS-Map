@@ -10,10 +10,10 @@ import io
 # =========================
 # (index pandas 0-based; Excel rows: 6,7,52,53,8)
 ROW_PRODUSEN   = 6  - 1   # row 6 -> index 5
-ROW_KEMASAN    = 7  - 1
-ROW_MERK       = 52 - 1
-ROW_HOLDING    = 53 - 1
-ROW_DATA_START = 8  - 1
+ROW_KEMASAN    = 7  - 1   # row 7 -> index 6
+ROW_MERK       = 52 - 1   # row 52 -> index 51
+ROW_HOLDING    = 53 - 1   # row 53 -> index 52
+ROW_DATA_START = 8  - 1   # row 8 -> index 7
 
 BASE_COLS = [
     "Tahun","Bulan","nbulan","Daerah","Pulau","Produsen",
