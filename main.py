@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import re
 import io
+from pandas.api.types import CategoricalDtype
 
 # =========================
 # KONFIGURASI HEADER & DATA
@@ -33,67 +34,88 @@ daerah_to_pulau = {
 }
 bulan_map = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"Mei",6:"Jun",7:"Jul",8:"Agt",9:"Sep",10:"Okt",11:"Nov",12:"Des"}
 
+# ==========================
+# URUTAN KUSTOM: DAEARAH
+# ==========================
+DAERAH_ORDER = [
+    "D.I. Aceh","Sumut","Sumbar","Riau","Kepulauan Riau","Jambi","Sumsel","Bangka - Belitung","Bengkulu","Lampung",
+    "D. K. I. Jakarta","Banten","Jabar","Jateng","D. I. Y.","Jatim",
+    "Kalbar","Kalsel","Kalteng","Kaltim","Kaltara",
+    "Sultera","Sulsel","Sulbar","Sulteng","Sulut","Gorontalo",
+    "Bali","N. T. B.","N. T. T.",
+    "Maluku","Maluku Utara","Papua Barat","Papua"
+]
+
+def apply_daerah_order(df: pd.DataFrame) -> pd.DataFrame:
+    """Set kolom Daerah sebagai kategori berurutan sesuai DAERAH_ORDER."""
+    if "Daerah" in df.columns:
+        cat = CategoricalDtype(categories=DAERAH_ORDER, ordered=True)
+        df["Daerah"] = df["Daerah"].astype(str).str.strip().astype(cat)
+    return df
+
 # ==========
 # UTILITIES
 # ==========
-def header_text(df: pd.DataFrame, r: int, c: int) -> str: # Ambil isi sel dari grid mentah, aman terhadap NaN & Out of Range
-    """Ambil teks grid; NaN => ''."""
+def header_text(df: pd.DataFrame, r: int, c: int) -> str:
+    """Ambil isi sel dari grid mentah, aman terhadap NaN & Out of Range."""
     try:
-        v = df.iat[r, c] # Coba akses df.iat[r,c] (row & column)
+        v = df.iat[r, c]
     except Exception:
-        return "" # Jika gagal/Nan, kembalikan "" (string kosong)
+        return ""
     return "" if pd.isna(v) else str(v)
 
 def clean_text(s: str) -> str:
-    return str(s).strip() # Pastikan tipe String & Buang spasi kiri/kanan
+    return str(s).strip()
 
 def clean_kemasan(s: str) -> str:
     s = clean_text(s)
-    return "Bulk" if s.lower() == "curah" else s # Digunakan apakah konsisten Bag/Bluk
+    # Normalisasi istilah kemasan
+    if s.lower() == "curah" or s.lower() == "bulk":
+        return "Bulk"
+    if s.lower() in ["bag", "zak"]:
+        return "Bag"
+    return s
 
 def to_number(v) -> float:
-    if pd.isna(v): return 0.0 # Rubah NaN jadi 0.0
+    if pd.isna(v): return 0.0
     s = str(v).strip()
-    if s in ("", "-"): return 0.0 # Rubah "" dan "-" jadi 0.0
-    # buang pemisah ribuan umum
-    s = re.sub(r"[.,](?=\d{3}\b)", "", s) # Hapus pemisah ribuan dengan RegEx
-    s = s.replace(",", ".") # Ganti koma jadi titik (inggris)
+    if s in ("", "-"): return 0.0
+    s = re.sub(r"[.,](?=\d{3}\b)", "", s)
+    s = s.replace(",", ".")
     try:
-        return float(s) # Bersihkan karakter non digit menggunakan float
+        return float(s)
     except Exception:
         try:
-            return float(re.sub(r"[^\d.-]", "", s)) # Bersihkan karakter non digit menggunakan float RegEx
+            return float(re.sub(r"[^\d.-]", "", s))
         except Exception:
-            return 0.0 # Kalau masih gagal, ganti jadi 0.0
+            return 0.0
 
-def stop_at_this_column(df: pd.DataFrame, col: int) -> bool: # Tujuan: Deteksi batas kanan
+def stop_at_this_column(df: pd.DataFrame, col: int) -> bool:
     """True jika sel data pertama (ROW_DATA_START) kosong / '-'."""
-    v = header_text(df, ROW_DATA_START, col) # Logika: Lihat baris data pertama di kolom tsb (row 8)
-    return (v.strip() == "" or v.strip() == "-") # Jika kosong/"-" artinya stop disini
+    v = header_text(df, ROW_DATA_START, col)
+    return (v.strip() == "" or v.strip() == "-")
 
-def find_col_provinsi(df: pd.DataFrame, max_col: int): # Loop semua kolom dari c=0 sampai max_col
+def find_col_provinsi(df: pd.DataFrame, max_col: int):
     """Cari kolom 'Provinsi' fleksibel di row 6/7/52."""
     for c in range(0, max_col+1):
-        t6  = header_text(df, ROW_PRODUSEN, c).replace(" ", "").upper() # Baca Header row 6
-        t7  = header_text(df, ROW_KEMASAN,  c).replace(" ", "").upper() # Baca Header row 7
-        t52 = header_text(df, ROW_MERK,     c).replace(" ", "").upper() # Baca Header row 52
-        if "PROVINSI" in t6 or "PROVINSI" in t7 or "PROVINSI" in t52: # Cari string Provinsi di row 6/7/52
+        t6  = header_text(df, ROW_PRODUSEN, c).replace(" ", "").upper()
+        t7  = header_text(df, ROW_KEMASAN,  c).replace(" ", "").upper()
+        t52 = header_text(df, ROW_MERK,     c).replace(" ", "").upper()
+        if "PROVINSI" in t6 or "PROVINSI" in t7 or "PROVINSI" in t52:
             return c
     return None
 
-def to_numeric_series(s: pd.Series) -> pd.Series: # Konversi satu kolom Series ke numerik aman (untuk DataFrame "bulan ini"/Database)
+def to_numeric_series(s: pd.Series) -> pd.Series:
     return (
         s.astype(str)
          .str.replace(r"[.,](?=\d{3}\b)", "", regex=True)
-         .str.replace("-", "0") # Ganti "-" menjadi 0
-         .replace({"nan":"0","None":"0"}) # Ganti NaN/None menjadi 0
+         .str.replace("-", "0")
+         .replace({"nan":"0","None":"0"})
          .astype(float)
     )
 
 def safe_select(df: pd.DataFrame, cols: list) -> pd.DataFrame:
-    return df[[c for c in cols if c in df.columns]].copy() # Pilih subset kolom tanpa error kalau ada kolom yang hilang
-    # Logika: Kasih hanya kolom yang memang ada di df
-    # Khawatir ada beda kolom di databse Current & Database ASI
+    return df[[c for c in cols if c in df.columns]].copy()
 
 # ==============================
 # UNPIVOT: PRODUSEN-HOLDING-MERK
@@ -103,70 +125,69 @@ def unpivot_produsen_holding_merk(xlsx_bytes: bytes, sheet_name=0) -> pd.DataFra
     Return DataFrame long-format:
     ['Daerah','Kemasan','Produsen','Holding','Merk','Total','OrderKey']
     """
-    # baca grid mentah tanpa header
-    df = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=sheet_name, header=None, engine="openpyxl", dtype=str) # Baca Grid mentah
-    if df.shape[1] == 0: # Kalo gaada isinya, ya error
+    df = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=sheet_name, header=None, engine="openpyxl", dtype=str)
+    if df.shape[1] == 0:
         raise ValueError("Sheet kosong.")
 
     # batas kolom → pakai baris kemasan
-    max_col = int(df.iloc[ROW_KEMASAN].last_valid_index()) if df.shape[1] else -1 # Kolom terakhir yang terisi di row kemasan (baris 7 excel)
+    max_col = int(df.iloc[ROW_KEMASAN].last_valid_index()) if df.shape[1] else -1
     if max_col < 0:
         raise ValueError("Baris kemasan (row 7) kosong / tidak ditemukan.")
 
-    col_prov = find_col_provinsi(df, max_col) # Kolom yang memuat Provinsi
+    col_prov = find_col_provinsi(df, max_col)
     if col_prov is None:
         raise ValueError("Kolom 'Provinsi' tidak ditemukan di row 6/7/52.")
 
-    first_data_col = col_prov + 1 # Kolom data dimulai setelah kolom yang memuat "PROVINSI"
+    first_data_col = col_prov + 1
 
     # Urutan produsen untuk OrderKey (kiri->kanan)
     produsen_order = []
     for c in range(first_data_col, max_col + 1):
-        if stop_at_this_column(df, c): # True: Jika baris data pertama kosong/"-" maka Stop
+        if stop_at_this_column(df, c):
             break
         produsen = clean_text(header_text(df, ROW_PRODUSEN, c))
         kemasan  = clean_kemasan(header_text(df, ROW_KEMASAN,  c))
-        if produsen and kemasan in ("Bag", "Bulk"): # Jika produsen ada dan kemasan (bag/bul), append ke proudsen_order
-            if produsen not in produsen_order: # Ini untuk mencegah duplikat
+        if produsen and kemasan in ("Bag", "Bulk"):
+            if produsen not in produsen_order:
                 produsen_order.append(produsen)
-    produsen_to_idx = {p: i+1 for i, p in enumerate(produsen_order)} # Produsen disortir per daerah sesuai urutan produsen
+    produsen_to_idx = {p: i+1 for i, p in enumerate(produsen_order)}
 
     # Build records: Bag dulu, Bulk belakangan
     records = []
-    for pass_type in ("Bag", "Bulk"): # Pisahkan supaya proses sortir mudah
+    for pass_type in ("Bag", "Bulk"):
         blank_run = 0
-        r = ROW_DATA_START # Row dimulai dari data start (baris 8 excel)
-        max_row = df.shape[0] - 1 # Sampai akhir
+        r = ROW_DATA_START
+        max_row = df.shape[0] - 1
         while r <= max_row:
             daerah = clean_text(header_text(df, r, col_prov))
             # Stop bawah:
-            if daerah.upper().startswith("CATATAN"): # Stop kalo daerah diawal "CATATAN"
+            if daerah.upper().startswith("CATATAN"):
                 break
-            if daerah == "": 
+            if daerah == "":
                 blank_run += 1
-                if blank_run >= 2: # Stop kalo ketemu 2 baris kosong berturut-turut
+                if blank_run >= 2:
                     break
                 r += 1
                 continue
             else:
                 blank_run = 0
 
-            if daerah.upper().startswith("TOTAL"): # Skip daerah jika diawal "TOTAL"
-                r += 1 # Skip
+            if daerah.upper().startswith("TOTAL"):
+                r += 1
                 continue
 
             # Loop kolom data
             for c in range(first_data_col, max_col + 1):
-                if stop_at_this_column(df, c): # True, jika row 8 kosong stop ke kanan
+                if stop_at_this_column(df, c):
                     break
 
-                merk    = clean_text(header_text(df, ROW_MERK,     c)) # Ambil meta data kolom: Merk ~ Row 52
-                prod    = clean_text(header_text(df, ROW_PRODUSEN,  c)) # Ambil meta data kolom: Produsen ~ Row 6
-                holding = clean_text(header_text(df, ROW_HOLDING,   c)) # Ambil meta data kolom: Holding ~ Row 53
-                kemasan = clean_kemasan(header_text(df, ROW_KEMASAN, c)) # Ambil meta data kolom: Kemasan ~ Row 7
+                merk    = clean_text(header_text(df, ROW_MERK,     c))
+                prod    = clean_text(header_text(df, ROW_PRODUSEN,  c))
+                holding = clean_text(header_text(df, ROW_HOLDING,   c))
+                kemasan = clean_kemasan(header_text(df, ROW_KEMASAN, c))
 
-                if prod and kemasan in ("Bag", "Bulk") and kemasan == pass_type: # Kalau kemasan cocok (Bag, Bulk) dan produsen tidak kosong
-                    val = to_number(header_text(df, r, c)) # Ambil metadata (Total)
+                if prod and kemasan in ("Bag", "Bulk") and kemasan == pass_type:
+                    val = to_number(header_text(df, r, c))
                     type_rank = 0 if pass_type == "Bag" else 100
                     if prod in produsen_to_idx:
                         order_key = type_rank + produsen_to_idx[prod]
@@ -245,8 +266,14 @@ if uploaded_current is not None:
         sheet_names = xls.sheet_names
         sheet_sel = st.selectbox("Pilih Sheet • Data Bulan Ini", sheet_names, index=0)
         df_long = unpivot_produsen_holding_merk(cur_bytes, sheet_name=sheet_sel)
+
+        # Terapkan urutan kustom Daerah untuk preview
+        df_long = apply_daerah_order(df_long)
         st.success(f"Unpivot OK • Baris: {len(df_long):,}")
-        st.dataframe(df_long.head(5), use_container_width=True)
+        st.dataframe(
+            df_long.sort_values(["Daerah","OrderKey"], na_position="last").head(5),
+            use_container_width=True
+        )
     except Exception as e:
         st.error(f"Gagal unpivot Data Bulan Ini: {e}")
 
@@ -262,7 +289,7 @@ if not (uploaded_current and uploaded_db and uploaded_map):
 
 if start:
     try:
-        # Baca DB & Mapping (sheet pertama, atau bisa kasih selector seperti Current)
+        # Baca DB & Mapping
         db_bytes  = get_bytes(uploaded_db)
         map_bytes = get_bytes(uploaded_map)
         db = pd.read_excel(io.BytesIO(db_bytes), engine="openpyxl")
@@ -276,7 +303,7 @@ if start:
         current["Bulan"]  = current["nbulan"].astype(int).map(bulan_map)
         current["Negara"] = "Domestik"
         if "Daerah" in current.columns:
-            current["Pulau"] = current["Daerah"].map(daerah_to_pulau).fillna("Lainnya")
+            current["Pulau"] = current["Daerah"].astype(str).map(daerah_to_pulau).fillna("Lainnya")
 
         # Pastikan Total numerik
         if "Total" in current.columns:
@@ -313,21 +340,25 @@ if start:
         # Hitung MS & Growth
         result = calc_ms_and_growth(combined)
 
+        # TERAPKAN URUTAN DAEARAH SEBELUM SORTING AKHIR
+        result = apply_daerah_order(result)
+
         final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %",
                                   "Total Merk YtD","Total All YtD","MSY"]
         final_cols = [c for c in final_cols if c in result.columns]
         final = (result[final_cols]
-                 .sort_values(["Tahun","nbulan","Merk"])
+                 .sort_values(["Tahun","nbulan","Daerah","Merk"], na_position="last")
                  .reset_index(drop=True))
 
         # Optional key gabungan (kalau perlu)
-        final["X"] = (
-            final["Tahun"].astype(str)
-            + final["Bulan"].astype(str)
-            + final["Daerah"].astype(str)
-            + final["Merk"].astype(str)
-            + final["Kemasan"].astype(str)
-        )
+        if {"Tahun","Bulan","Daerah","Merk","Kemasan"}.issubset(final.columns):
+            final["X"] = (
+                final["Tahun"].astype(str)
+                + final["Bulan"].astype(str)
+                + final["Daerah"].astype(str)
+                + final["Merk"].astype(str)
+                + final["Kemasan"].astype(str)
+            )
 
         # Urut kolom output
         desired = ["X","Tahun","Bulan","Daerah","Pulau","Produsen","Total",
