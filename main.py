@@ -69,8 +69,8 @@ def clean_text(s: str) -> str:
 
 def clean_kemasan(s: str) -> str:
     s = clean_text(s)
-    # Normalisasi istilah kemasan
-    if s.lower() == "curah" or s.lower() == "bulk":
+    # Normalisasi istilah kemasan (curah/bulk -> Bulk; bag/zak -> Bag)
+    if s.lower() in ["curah", "bulk"]:
         return "Bulk"
     if s.lower() in ["bag", "zak"]:
         return "Bag"
@@ -80,8 +80,8 @@ def to_number(v) -> float:
     if pd.isna(v): return 0.0
     s = str(v).strip()
     if s in ("", "-"): return 0.0
-    s = re.sub(r"[.,](?=\d{3}\b)", "", s)
-    s = s.replace(",", ".")
+    s = re.sub(r"[.,](?=\d{3}\b)", "", s)  # hapus pemisah ribuan
+    s = s.replace(",", ".")                # koma -> titik
     try:
         return float(s)
     except Exception:
@@ -267,7 +267,7 @@ if uploaded_current is not None:
         sheet_sel = st.selectbox("Pilih Sheet • Data Bulan Ini", sheet_names, index=0)
         df_long = unpivot_produsen_holding_merk(cur_bytes, sheet_name=sheet_sel)
 
-        # Terapkan urutan kustom Daerah untuk preview
+        # Terapkan urutan kustom Daerah untuk preview (belum ada Tahun/Merk di sini)
         df_long = apply_daerah_order(df_long)
         st.success(f"Unpivot OK • Baris: {len(df_long):,}")
         st.dataframe(
@@ -346,9 +346,13 @@ if start:
         final_cols = keep_cols + ["MS","MoM Growth %","YoY Growth %","YtD Growth %",
                                   "Total Merk YtD","Total All YtD","MSY"]
         final_cols = [c for c in final_cols if c in result.columns]
-        final = (result[final_cols]
-                 .sort_values(["Tahun","nbulan","Daerah","Merk"], na_position="last")
-                 .reset_index(drop=True))
+
+        # === URUTAN AKHIR: Tahun -> nbulan -> Merk -> Daerah (custom) ===
+        final = (
+            result[final_cols]
+            .sort_values(["Tahun","nbulan","Merk","Daerah"], na_position="last")
+            .reset_index(drop=True)
+        )
 
         # Optional key gabungan (kalau perlu)
         if {"Tahun","Bulan","Daerah","Merk","Kemasan"}.issubset(final.columns):
