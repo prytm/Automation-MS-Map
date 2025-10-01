@@ -345,4 +345,13 @@ if start:
         st.dataframe(final.head(5), use_container_width=True)
 
         buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            final.to_excel(w, index=False, sheet_name="Result")
+        buf.seek(0)
+        st.download_button(
+            "Download Data_Hasil.xlsx", buf,
+            file_name="Data_Hasil.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except Exception as e:
+        st.error(f"Gagal memproses: {e}")
